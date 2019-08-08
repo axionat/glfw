@@ -36,6 +36,28 @@
 
 #define _GLFW_KEY_INVALID -2
 
+extern void goMenuCallback(int code);
+
+HMENU createMenu() {
+    return CreateMenu();
+}
+
+BOOL appendSeparator(HMENU handle) {
+    return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
+}
+
+BOOL appendMenu(HMENU handle, int code, LPCWSTR title) {
+    return AppendMenu(handle, MF_STRING, (UINT_PTR) code, title);
+}
+
+BOOL appendPopup(HMENU handle, HMENU submenu, LPCWSTR title) {
+    return AppendMenu(handle, MF_POPUP, (UINT_PTR) submenu, title);
+}
+
+void setMainMenu(HWND window, HMENU menu) {
+    SetMenu(window, menu);
+}
+
 // Returns the window style for the specified window
 //
 static DWORD getWindowStyle(const _GLFWwindow* window)
@@ -512,6 +534,10 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
             }
             break;
         }
+
+        case WM_COMMAND:
+            goMenuCallback(LOWORD(wParam));
+            return 0;
 
         case WM_CLOSE:
         {
