@@ -46,12 +46,12 @@ BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
 }
 
-BOOL appendMenu(HMENU handle, int code, LPCWSTR title) {
-    return AppendMenu(handle, MF_STRING, (UINT_PTR) code, title);
+BOOL appendMenu(HMENU handle, int code, const char *title) {
+    return AppendMenuA(handle, MF_STRING, (UINT_PTR) code, title);
 }
 
-BOOL appendPopup(HMENU handle, HMENU submenu, LPCWSTR title) {
-    return AppendMenu(handle, MF_POPUP, (UINT_PTR) submenu, title);
+BOOL appendPopup(HMENU handle, HMENU submenu, const char *title) {
+    return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, title);
 }
 
 void setMainMenu(HWND window, HMENU menu) {

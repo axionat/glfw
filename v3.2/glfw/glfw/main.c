@@ -47,7 +47,7 @@ int main() {
     }
 
     HMENU mainMenu = createMenu();
-    appendMenu(mainMenu, 33, TEXT("Push"));
+    appendMenu(mainMenu, 33, "Push");
     setMainMenu(glfwGetWin32Window(window), mainMenu);
 
     glfwSetKeyCallback(window, key_callback);
