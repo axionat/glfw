@@ -19,9 +19,11 @@
 #include "src/win32_window.c"
 #include "src/window.c"
 
+#define TEST_CODE 33
+
 void goMenuCallback(int code) {
-    if (code == 33)
-        MessageBox(NULL, TEXT("Hello, world!"), TEXT("Menu"), MB_OK);
+    if (code == TEST_CODE)
+        MessageBoxA(NULL, "Hello, world!", "Menu", MB_OK);
 }
 
 static void error_callback(int error, const char* description) {
@@ -46,20 +48,15 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    HMENU mainMenu = createMenu();
-    appendMenu(mainMenu, 33, "Push");
-    setMainMenu(glfwGetWin32Window(window), mainMenu);
+    HMENU mainMenu = CreateMenu();
+    appendMenu(mainMenu, TEST_CODE, "Test");
+    SetMenu(glfwGetWin32Window(window), mainMenu);
 
     glfwSetKeyCallback(window, key_callback);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
     while (!glfwWindowShouldClose(window)) {
-        //int width, height;
-        //glfwGetFramebufferSize(window, &width, &height);
-        //glViewport(0, 0, width, height);
-        //glClearColor(1.f, 0.f, 0.f, 1.f);
-        //glClear(GL_COLOR_BUFFER_BIT);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

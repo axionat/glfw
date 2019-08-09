@@ -38,10 +38,6 @@
 
 extern void goMenuCallback(int code);
 
-HMENU createMenu() {
-    return CreateMenu();
-}
-
 BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
 }
@@ -52,10 +48,6 @@ BOOL appendMenu(HMENU handle, int code, const char *title) {
 
 BOOL appendPopup(HMENU handle, HMENU submenu, const char *title) {
     return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, title);
-}
-
-void setMainMenu(HWND window, HMENU menu) {
-    SetMenu(window, menu);
 }
 
 // Returns the window style for the specified window

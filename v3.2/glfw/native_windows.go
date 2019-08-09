@@ -6,11 +6,9 @@ package glfw
 //#define GLFW_INCLUDE_NONE
 //#include "glfw/include/GLFW/glfw3.h"
 //#include "glfw/include/GLFW/glfw3native.h"
-//HMENU createMenu();
 //BOOL appendSeparator(HMENU handle);
 //BOOL appendMenu(HMENU handle, int code, const char *title);
 //BOOL appendPopup(HMENU handle, HMENU submenu, const char *title);
-//void setMainMenu(HWND window, HMENU menu);
 import "C"
 import (
 	"sync"
@@ -48,7 +46,7 @@ func (w *Window) GetWGLContext() C.HGLRC {
 // SetMainMenu for this window
 func (w *Window) SetMainMenu(menu *Menu) {
 	ret := C.glfwGetWin32Window(w.data)
-	C.setMainMenu(ret, menu.handle)
+	C.SetMenu(ret, menu.handle)
 }
 
 //export goMenuCallback
@@ -66,7 +64,7 @@ type Menu struct {
 // NewMenu constructor
 func NewMenu() *Menu {
 	return &Menu{
-		handle: C.createMenu(),
+		handle: C.CreateMenu(),
 	}
 }
 
