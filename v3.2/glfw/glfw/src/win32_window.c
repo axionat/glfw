@@ -36,7 +36,7 @@
 
 #define _GLFW_KEY_INVALID -2
 
-extern void goMenuCallback(int code);
+extern void goMenuCallback(_GLFWwindow* window, int code);
 
 BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
@@ -528,7 +528,7 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
         }
 
         case WM_COMMAND:
-            goMenuCallback(LOWORD(wParam));
+		  goMenuCallback(window, LOWORD(wParam));
             return 0;
 
         case WM_CLOSE:
