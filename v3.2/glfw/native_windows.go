@@ -214,7 +214,7 @@ func (menu *Menu) AppendMenuItem(menuItem *MenuItem) {
 		C.CheckMenuItem(menu.handle, C.uint(code), 0x8) // MF_CHECKED == 0x8
 	}
 	if !menuItem.enabled {
-		C.EnableMenuItem(mi.menu.handle, C.uint(mi.code), 0x1) // C.MF_GRAYED == 0x1
+		C.EnableMenuItem(menu.handle, C.uint(code), 0x1) // C.MF_GRAYED == 0x1
 	}
 }
 
