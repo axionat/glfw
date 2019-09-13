@@ -209,11 +209,12 @@ func (menu *Menu) AppendMenuItem(menuItem *MenuItem) {
 	C.appendMenu(menu.handle, code, title)
 
 	// use any pre-append item states that have been set
+	// if checked or disabled then update
 	if menuItem.checked {
-		menuItem.SetChecked(menuItem.checked)
+		C.CheckMenuItem(menu.handle, C.uint(code), 0x8) // MF_CHECKED == 0x8
 	}
 	if !menuItem.enabled {
-		menuItem.SetEnabled(menuItem.enabled)
+		C.EnableMenuItem(mi.menu.handle, C.uint(mi.code), 0x1) // C.MF_GRAYED == 0x1
 	}
 }
 
