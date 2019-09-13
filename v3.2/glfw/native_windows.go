@@ -147,6 +147,10 @@ func (mi *MenuItem) SetChecked(chk bool) {
 		mi.checked = chk
 		return
 	}
+	if mi.checked == chk {
+		return
+	}
+	mi.checked = chk
 	if chk {
 		C.CheckMenuItem(mi.menu.handle, C.uint(mi.code), 0x8) // MF_CHECKED == 0x8
 	} else {
@@ -163,6 +167,10 @@ func (mi *MenuItem) SetEnabled(enabled bool) {
 		mi.enabled = enabled
 		return
 	}
+	if enabled == mi.enabled {
+		return
+	}
+	mi.enabled = enabled
 	if enabled {
 		C.EnableMenuItem(mi.menu.handle, C.uint(mi.code), 0x0) // C.MF_ENABLED == 0
 	} else {
@@ -201,8 +209,12 @@ func (menu *Menu) AppendMenuItem(menuItem *MenuItem) {
 	C.appendMenu(menu.handle, code, title)
 
 	// use any pre-append item states that have been set
-	menuItem.SetChecked(menuItem.checked)
-	menuItem.SetEnabled(menuItem.enabled)
+	if menuItem.checked {
+		menuItem.SetChecked(menuItem.checked)
+	}
+	if !menuItem.enabled {
+		menuItem.SetEnabled(menuItem.enabled)
+	}
 }
 
 // AppendSubMenu to this menu
