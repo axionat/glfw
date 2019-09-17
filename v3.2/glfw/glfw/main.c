@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #define _GLFW_WIN32
+
 #include "src/context.c"
 #include "src/egl_context.c"
 #include "src/init.c"
@@ -21,16 +22,25 @@
 
 #define TEST_CODE 33
 
-void goMenuCallback(int code) {
-    if (code == TEST_CODE)
-        MessageBoxA(NULL, "Hello, world!", "Menu", MB_OK);
+
+
+void goMenuCallback(_GLFWwindow *window, int code) {
+    char narrowString[] = "Cerrar sesión";
+    int length = MultiByteToWideChar(CP_UTF8, 0, narrowString, -1, NULL, 0);
+    wchar_t wideString[length];
+    MultiByteToWideChar(CP_UTF8, 0, narrowString, -1, wideString, length);
+
+    if (code == TEST_CODE) {
+        MessageBox(NULL, wideString, L"Menu", MB_OK); // Works
+        //MessageBoxA(NULL, "Cerrar sesión", "Menu", MB_OK); // Does not work
+    }
 }
 
-static void error_callback(int error, const char* description) {
+static void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
@@ -49,7 +59,7 @@ int main() {
     }
 
     HMENU mainMenu = CreateMenu();
-    appendMenu(mainMenu, TEST_CODE, "Test");
+    appendMenu(mainMenu, TEST_CODE, "Sesión");
     SetMenu(glfwGetWin32Window(window), mainMenu);
 
     glfwSetKeyCallback(window, key_callback);

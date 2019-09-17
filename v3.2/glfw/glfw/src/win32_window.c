@@ -43,11 +43,17 @@ BOOL appendSeparator(HMENU handle) {
 }
 
 BOOL appendMenu(HMENU handle, int code, const char *title) {
-    return AppendMenuA(handle, MF_STRING, (UINT_PTR) code, title);
+    int length = MultiByteToWideChar(CP_UTF8, 0, title, -1, NULL, 0);
+    wchar_t wideTitle[length];
+    MultiByteToWideChar(CP_UTF8, 0, title, -1, wideTitle, length);
+    return AppendMenu(handle, MF_STRING, (UINT_PTR) code, wideTitle);
 }
 
 BOOL appendPopup(HMENU handle, HMENU submenu, const char *title) {
-    return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, title);
+    int length = MultiByteToWideChar(CP_UTF8, 0, title, -1, NULL, 0);
+    wchar_t wideTitle[length];
+    MultiByteToWideChar(CP_UTF8, 0, title, -1, wideTitle, length);
+    return AppendMenu(handle, MF_POPUP, (UINT_PTR) submenu, wideTitle);
 }
 
 // Returns the window style for the specified window
