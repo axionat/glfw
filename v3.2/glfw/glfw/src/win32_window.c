@@ -43,11 +43,11 @@ BOOL appendSeparator(HMENU handle) {
 }
 
 BOOL appendMenu(HMENU handle, int code, UINT_PTR title) {
-  return AppendMenuA(handle, MF_STRING, (UINT_PTR) code, (*char)title);
+  return AppendMenuA(handle, MF_STRING, (UINT_PTR) code, (char*)title);
 }
 
 BOOL appendPopup(HMENU handle, HMENU submenu, UINT_PTR title) {
-  return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, (*char)title);
+  return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, (char*)title);
 }
 
 // Returns the window style for the specified window
