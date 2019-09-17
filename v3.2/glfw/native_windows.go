@@ -13,6 +13,7 @@ import "C"
 import (
 	"fmt"
 	"sync"
+	"syscall"
 	"unsafe"
 )
 
@@ -206,6 +207,7 @@ func (menu *Menu) AppendMenuItem(menuItem *MenuItem) {
 	code := registry.register(menuItem.Callback)
 	menuItem.code = code
 	menuItem.menu = menu
+	title := uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(menu.Title)))
 	C.appendMenu(menu.handle, code, title)
 
 	// use any pre-append item states that have been set
@@ -224,8 +226,10 @@ func (menu *Menu) AppendSubMenu(subMenu *SubMenu) {
 		panic("window does not match for menu and submenu: " + subMenu.Title)
 	}
 
-	title := C.CString(subMenu.Title)
-	defer C.free(unsafe.Pointer(title))
+	title := uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(menu.Title)))
+
+	//title := C.CString(subMenu.Title)
+	// defer C.free(unsafe.Pointer(title))
 
 	C.appendPopup(menu.handle, subMenu.handle, title)
 }
