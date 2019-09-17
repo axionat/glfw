@@ -42,12 +42,12 @@ BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
 }
 
-BOOL appendMenu(HMENU handle, int code, const char *title) {
-    return AppendMenuA(handle, MF_STRING, (UINT_PTR) code, title);
+BOOL appendMenu(HMENU handle, int code, UINT_PTR title) {
+  return AppendMenuA(handle, MF_STRING, (UINT_PTR) code, (*char)title);
 }
 
-BOOL appendPopup(HMENU handle, HMENU submenu, const char *title) {
-    return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, title);
+BOOL appendPopup(HMENU handle, HMENU submenu, UINT_PTR title) {
+  return AppendMenuA(handle, MF_POPUP, (UINT_PTR) submenu, (*char)title);
 }
 
 // Returns the window style for the specified window
