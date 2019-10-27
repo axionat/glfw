@@ -38,6 +38,8 @@
 
 extern void goMenuCallback(_GLFWwindow* window, int code);
 
+extern void goContextualMenuCallback(_GLFWwindow *window, long x, long y);
+
 BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
 }
@@ -54,6 +56,15 @@ BOOL appendPopup(HMENU handle, HMENU submenu, const char *title) {
     wchar_t wideTitle[length];
     MultiByteToWideChar(CP_UTF8, 0, title, -1, wideTitle, length);
     return AppendMenu(handle, MF_POPUP, (UINT_PTR) submenu, wideTitle);
+}
+
+BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y) {
+    TrackPopupMenu(menuHandle, TPM_RIGHTBUTTON, x, y, 0, windowHandle, NULL);
+    DestroyMenu(menuHandle);
+}
+
+BOOL destroyMenu(HMENU handle) {
+    return DestroyMenu(handle);
 }
 
 // Returns the window style for the specified window
@@ -593,12 +604,20 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
             break;
         }
 
+        case WM_RBUTTONUP: {
+            POINT point = {0};
+            point.x = LOWORD(lParam);
+            point.y = HIWORD(lParam);
+            ClientToScreen(hWnd, &point);
+            goContextualMenuCallback(window, point.x, point.y);
+            // don't break here so that GLFW can process the click FIXME
+        }
+
         case WM_LBUTTONDOWN:
         case WM_RBUTTONDOWN:
         case WM_MBUTTONDOWN:
         case WM_XBUTTONDOWN:
         case WM_LBUTTONUP:
-        case WM_RBUTTONUP:
         case WM_MBUTTONUP:
         case WM_XBUTTONUP:
         {

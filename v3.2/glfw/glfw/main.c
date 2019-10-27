@@ -22,8 +22,6 @@
 
 #define TEST_CODE 33
 
-
-
 void goMenuCallback(_GLFWwindow *window, int code) {
     char narrowString[] = "Cerrar sesión";
     int length = MultiByteToWideChar(CP_UTF8, 0, narrowString, -1, NULL, 0);
@@ -35,6 +33,15 @@ void goMenuCallback(_GLFWwindow *window, int code) {
         //MessageBoxA(NULL, "Cerrar sesión", "Menu", MB_OK); // Does not work
     }
 }
+
+void goContextualMenuCallback(_GLFWwindow *window, long x, long y) {
+    HMENU hMenu = CreatePopupMenu();
+    AppendMenuW(hMenu, MF_STRING, 33, L"&New");
+    AppendMenuW(hMenu, MF_STRING, 33, L"&Open");
+    AppendMenuW(hMenu, MF_STRING, 33, L"&Quit");
+    showAndDestroyContextualMenu(hMenu, window->win32.handle, x, y);
+}
+
 
 static void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);

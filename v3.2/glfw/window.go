@@ -160,6 +160,9 @@ type Window struct {
 	fCharHolder        func(w *Window, char rune)
 	fCharModsHolder    func(w *Window, char rune, mods ModifierKey)
 	fDropHolder        func(w *Window, names []string)
+
+	// GetContextualMenu is an aXion method
+	GetContextualMenu func() *Menu
 }
 
 // GLFWWindow returns a *C.GLFWwindow reference (i.e. the GLFW window itself). This can be used for

@@ -6,9 +6,11 @@ package glfw
 //#define GLFW_INCLUDE_NONE
 //#include "glfw/include/GLFW/glfw3.h"
 //#include "glfw/include/GLFW/glfw3native.h"
+//BOOL destroyMenu(HMENU handle);
 //BOOL appendSeparator(HMENU handle);
 //BOOL appendMenu(HMENU handle, int code, const char *title);
 //BOOL appendPopup(HMENU handle, HMENU submenu, const char *title);
+//BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y);
 import "C"
 import (
 	"fmt"
@@ -86,6 +88,15 @@ func goMenuCallback(w *C.GLFWwindow, code C.int) {
 	}
 }
 
+//export goContextualMenuCallback
+func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) {
+	if window := windows.get(w); window.GetContextualMenu != nil {
+		if menu := window.GetContextualMenu(); menu != nil {
+			menu.showAndDestroy(x, y)
+		}
+	}
+}
+
 // Menu struct
 type Menu struct {
 	handle C.HMENU
@@ -98,6 +109,18 @@ func NewMenu(w *Window) *Menu {
 		handle: C.CreateMenu(),
 		window: w,
 	}
+}
+
+// NewContextualMenu constructor
+func NewContextualMenu(w *Window) *Menu {
+	return &Menu{
+		handle: C.CreatePopupMenu(),
+		window: w,
+	}
+}
+
+func (menu *Menu) showAndDestroy(x, y C.long) {
+	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(), x, y)
 }
 
 // MenuItem struct
@@ -191,6 +214,11 @@ func NewSubMenu(w *Window, title string) *SubMenu {
 		Menu:  NewMenu(w),
 		Title: title,
 	}
+}
+
+// Destroy this menu. Not needed when menu is attached to a window via `SetMenu`.
+func (menu *Menu) Destroy() {
+	C.destroyMenu(menu.handle)
 }
 
 // AppendSeparator to this menu
