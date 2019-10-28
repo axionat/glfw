@@ -162,7 +162,7 @@ type Window struct {
 	fDropHolder        func(w *Window, names []string)
 
 	// callback funcgtion for contextual menu on mouse botton 2
-	fContextualHolder func(w *Window, xpos, ypos float64) *Menu
+	fContextualHolder func(w *Window) *Menu
 }
 
 // GLFWWindow returns a *C.GLFWwindow reference (i.e. the GLFW window itself). This can be used for
