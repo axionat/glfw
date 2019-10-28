@@ -156,13 +156,15 @@ func CoupledMenuItem(title string, target *bool) (item *MenuItem) {
 
 // NewMenuItem constructor
 func NewMenuItem(title string, callback interface{}) *MenuItem {
-	// verfify callback is a supported type
-	switch callback := callback.(type) {
-	case func():
-	case func(*Window):
-	case func(*Window, ModifierKey):
-	default:
-		panic(fmt.Sprintf("Unable to create menu item with unsupported type for callback: %T", callback))
+	if callback != nil {
+		// verify callback is a supported type
+		switch callback := callback.(type) {
+		case func():
+		case func(*Window):
+		case func(*Window, ModifierKey):
+		default:
+			panic(fmt.Sprintf("Unable to create menu item with unsupported type for callback: %T", callback))
+		}
 	}
 	return &MenuItem{
 		Title:    title,
