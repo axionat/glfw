@@ -141,7 +141,7 @@ func (menu *Menu) ShowAndDestroy() {
 	x += int(xpos)
 	y += int(ypos)
 	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(),
-		C.long(x), c.long(y))
+		C.long(x), C.long(y))
 }
 
 // MenuItem struct
