@@ -98,7 +98,7 @@ func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) bool {
 		// will fall through to general mouse button handler
 		return false
 	}
-	if menu := contextual(window, float64(x), float64(y)); menu != nil {
+	if menu := contextual(window); menu != nil {
 		// an actual menu was created
 		menu.showAndDestroy(x, y)
 	}

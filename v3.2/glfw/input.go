@@ -561,7 +561,7 @@ type MouseButtonCallback func(w *Window, button MouseButton, action Action, mod 
 
 // ContextualCallback is a callback function for contextual mouse button 2 capable
 // of creating a popup menu
-type ContextualCallback func(w *Window, xpos, ypos float64) *Menu
+type ContextualCallback func(w *Window) *Menu
 
 // SetContextualCallback sets the right mouse button contextual menu callback.
 //
