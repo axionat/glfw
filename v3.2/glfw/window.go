@@ -161,7 +161,7 @@ type Window struct {
 	fCharModsHolder    func(w *Window, char rune, mods ModifierKey)
 	fDropHolder        func(w *Window, names []string)
 
-	// GetContextualMenu is an aXion method
+	// GetContextualMenu must construct and return an entirely new Menu every time
 	GetContextualMenu func() *Menu
 }
 
