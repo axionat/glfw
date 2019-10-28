@@ -38,7 +38,7 @@
 
 extern void goMenuCallback(_GLFWwindow* window, int code);
 
-extern void goContextualMenuCallback(_GLFWwindow *window, long x, long y);
+extern BOOL goContextualMenuCallback(_GLFWwindow *window, long x, long y);
 
 BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);
@@ -609,8 +609,10 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg,
             point.x = LOWORD(lParam);
             point.y = HIWORD(lParam);
             ClientToScreen(hWnd, &point);
-            goContextualMenuCallback(window, point.x, point.y);
-            // don't break here so that GLFW can process the click FIXME
+            if (goContextualMenuCallback(window, point.x, point.y))
+			   break;
+			// if a contextual menu was created, this click was handled so break
+			// if no menu was created, then continue to handle click below
         }
 
         case WM_LBUTTONDOWN:

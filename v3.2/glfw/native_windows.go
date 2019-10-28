@@ -89,12 +89,21 @@ func goMenuCallback(w *C.GLFWwindow, code C.int) {
 }
 
 //export goContextualMenuCallback
-func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) {
-	if window := windows.get(w); window.GetContextualMenu != nil {
-		if menu := window.GetContextualMenu(); menu != nil {
-			menu.showAndDestroy(x, y)
-		}
+func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) bool {
+	// returns true if a contextual menu was created
+	window := windows.get(w)
+	contextual := window.fContextualHolder
+	if contextual == nil {
+		// no contextual handler, pass false to click
+		// will fall through to general mouse button handler
+		return false
 	}
+	if menu := contextual(window, float64(x), float64(y)); menu != nil {
+		// an actual menu was created
+		menu.showAndDestroy(x, y)
+	}
+	// true since we called a dedicated contexual handler
+	return true
 }
 
 // Menu struct

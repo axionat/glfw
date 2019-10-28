@@ -161,8 +161,8 @@ type Window struct {
 	fCharModsHolder    func(w *Window, char rune, mods ModifierKey)
 	fDropHolder        func(w *Window, names []string)
 
-	// GetContextualMenu must construct and return an entirely new Menu every time
-	GetContextualMenu func() *Menu
+	// callback funcgtion for contextual menu on mouse botton 2
+	fContextualHolder func(w *Window, xpos, ypos float64) *Menu
 }
 
 // GLFWWindow returns a *C.GLFWwindow reference (i.e. the GLFW window itself). This can be used for
