@@ -132,6 +132,18 @@ func (menu *Menu) showAndDestroy(x, y C.long) {
 	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(), x, y)
 }
 
+// ShowAndDestroy displays the menu then destroys it after any action or click
+// outside the menu
+func (menu *Menu) ShowAndDestroy() {
+	w := menu.window
+	xpos, ypos := w.GetCursorPos()
+	x, y := w.GetPos()
+	x += int(xpos)
+	y += int(ypos)
+	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(),
+		C.long(x), c.long(y))
+}
+
 // MenuItem struct
 type MenuItem struct {
 	Title    string
