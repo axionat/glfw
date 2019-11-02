@@ -36,9 +36,18 @@
 
 #define _GLFW_KEY_INVALID -2
 
-extern void goMenuCallback(_GLFWwindow* window, int code);
+extern void goMenuCallback(_GLFWwindow *window, int code);
 
 extern void goContextualMenuCallback(_GLFWwindow *window, long x, long y);
+
+LONG getMonitorPixelCount(HWND handle) {
+    HMONITOR monitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO info = {0};
+    info.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfo(monitor, &info);
+    return (info.rcMonitor.right - info.rcMonitor.left) * // width
+           (info.rcMonitor.bottom - info.rcMonitor.top);  // height
+}
 
 BOOL appendSeparator(HMENU handle) {
     return AppendMenu(handle, MF_SEPARATOR, (UINT_PTR) NULL, NULL);

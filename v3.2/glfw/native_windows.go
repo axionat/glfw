@@ -6,11 +6,12 @@ package glfw
 //#define GLFW_INCLUDE_NONE
 //#include "glfw/include/GLFW/glfw3.h"
 //#include "glfw/include/GLFW/glfw3native.h"
-//BOOL destroyMenu(HMENU handle);
+//getMonitorPixelCount(HWND handle);
 //BOOL appendSeparator(HMENU handle);
 //BOOL appendMenu(HMENU handle, int code, const char *title);
 //BOOL appendPopup(HMENU handle, HMENU submenu, const char *title);
 //BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y);
+//BOOL destroyMenu(HMENU handle);
 import "C"
 import (
 	"fmt"
@@ -71,6 +72,11 @@ func (w *Window) GetMods() (mods ModifierKey) {
 		mods += ModSuper
 	}
 	return mods
+}
+
+// GetMonitorPixelCount returns the monitor's width * height
+func (w *Window) GetMonitorPixelCount() int {
+	return int(C.getMonitorPixelCount(w.GetWin32Window()))
 }
 
 //export goMenuCallback
