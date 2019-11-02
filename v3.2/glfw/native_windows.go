@@ -74,9 +74,11 @@ func (w *Window) GetMods() (mods ModifierKey) {
 	return mods
 }
 
-// GetMonitorPixelCount returns the monitor's width * height
-func (w *Window) GetMonitorPixelCount() int {
-	return int(C.getMonitorPixelCount(w.GetWin32Window()))
+// GetMonitorScale receiver method
+func (w *Window) GetMonitorScale() int {
+	pixels := int(C.getMonitorPixelCount(w.GetWin32Window()))
+	width, height := w.GetMonitor().GetPhysicalSize()
+	return pixels / (width * height)
 }
 
 //export goMenuCallback
