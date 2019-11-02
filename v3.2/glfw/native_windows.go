@@ -6,7 +6,7 @@ package glfw
 //#define GLFW_INCLUDE_NONE
 //#include "glfw/include/GLFW/glfw3.h"
 //#include "glfw/include/GLFW/glfw3native.h"
-//getMonitorPixelCount(HWND handle);
+//LONG getMonitorPixelCount(HWND handle);
 //BOOL appendSeparator(HMENU handle);
 //BOOL appendMenu(HMENU handle, int code, const char *title);
 //BOOL appendPopup(HMENU handle, HMENU submenu, const char *title);
@@ -74,11 +74,9 @@ func (w *Window) GetMods() (mods ModifierKey) {
 	return mods
 }
 
-// GetMonitorScale receiver method
-func (w *Window) GetMonitorScale() int {
-	pixels := int(C.getMonitorPixelCount(w.GetWin32Window()))
-	width, height := w.GetMonitor().GetPhysicalSize()
-	return pixels / (width * height)
+// GetMonitorPixelCount receiver method
+func (w *Window) GetMonitorPixelCount() int {
+	return int(C.getMonitorPixelCount(w.GetWin32Window()))
 }
 
 //export goMenuCallback

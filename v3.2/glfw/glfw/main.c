@@ -34,7 +34,7 @@ void goMenuCallback(_GLFWwindow *window, int code) {
     }
 }
 
-void goContextualMenuCallback(_GLFWwindow *window, long x, long y) {
+BOOL goContextualMenuCallback(_GLFWwindow *window, long x, long y) {
     HMENU hMenu = CreatePopupMenu();
     AppendMenuW(hMenu, MF_STRING, 33, L"&New");
     AppendMenuW(hMenu, MF_STRING, 33, L"&Open");
