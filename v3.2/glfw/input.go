@@ -559,6 +559,27 @@ func (w *Window) SetCharModsCallback(cbfun CharModsCallback) (previous CharModsC
 // MouseButtonCallback is the mouse button callback.
 type MouseButtonCallback func(w *Window, button MouseButton, action Action, mod ModifierKey)
 
+// ContextualCallback is a callback function for contextual mouse button 2 capable
+// of creating a popup menu
+type ContextualCallback func(w *Window) *Menu
+
+// SetContextualCallback sets the right mouse button contextual menu callback.
+//
+// If set, mouse button 2 clicks call the set function which can create
+// a contextual menu.  If not set or a contextual menu is not created,
+// mouse button 2 clicks are passed through the general MouseButtonCallback.
+func (w *Window) SetContextualCallback(cbfun ContextualCallback) (previous ContextualCallback) {
+	previous = w.fContextualHolder
+	w.fContextualHolder = cbfun
+	if cbfun == nil && w.fMouseButtonHolder == nil {
+		C.glfwSetMouseButtonCallback(w.data, nil)
+	} else {
+		C.glfwSetMouseButtonCallbackCB(w.data)
+	}
+	panicError()
+	return previous
+}
+
 // SetMouseButtonCallback sets the mouse button callback which is called when a
 // mouse button is pressed or released.
 //
@@ -570,7 +591,7 @@ type MouseButtonCallback func(w *Window, button MouseButton, action Action, mod 
 func (w *Window) SetMouseButtonCallback(cbfun MouseButtonCallback) (previous MouseButtonCallback) {
 	previous = w.fMouseButtonHolder
 	w.fMouseButtonHolder = cbfun
-	if cbfun == nil {
+	if cbfun == nil && w.fContextualHolder == nil {
 		C.glfwSetMouseButtonCallback(w.data, nil)
 	} else {
 		C.glfwSetMouseButtonCallbackCB(w.data)

@@ -95,12 +95,21 @@ func goMenuCallback(w *C.GLFWwindow, code C.int) {
 }
 
 //export goContextualMenuCallback
-func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) {
-	if window := windows.get(w); window.GetContextualMenu != nil {
-		if menu := window.GetContextualMenu(); menu != nil {
-			menu.showAndDestroy(x, y)
-		}
+func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) bool {
+	// returns true if a contextual menu was created
+	window := windows.get(w)
+	contextual := window.fContextualHolder
+	if contextual == nil {
+		// no contextual handler, pass false to click
+		// will fall through to general mouse button handler
+		return false
 	}
+	if menu := contextual(window); menu != nil {
+		// an actual menu was created
+		menu.showAndDestroy(x, y)
+	}
+	// true since we called a dedicated contexual handler
+	return true
 }
 
 // Menu struct
@@ -129,6 +138,18 @@ func (menu *Menu) showAndDestroy(x, y C.long) {
 	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(), x, y)
 }
 
+// ShowAndDestroy displays the menu then destroys it after any action or click
+// outside the menu
+func (menu *Menu) ShowAndDestroy() {
+	w := menu.window
+	xpos, ypos := w.GetCursorPos()
+	x, y := w.GetPos()
+	x += int(xpos)
+	y += int(ypos)
+	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(),
+		C.long(x), C.long(y))
+}
+
 // MenuItem struct
 type MenuItem struct {
 	Title    string
@@ -153,13 +174,15 @@ func CoupledMenuItem(title string, target *bool) (item *MenuItem) {
 
 // NewMenuItem constructor
 func NewMenuItem(title string, callback interface{}) *MenuItem {
-	// verfify callback is a supported type
-	switch callback := callback.(type) {
-	case func():
-	case func(*Window):
-	case func(*Window, ModifierKey):
-	default:
-		panic(fmt.Sprintf("Unable to create menu item with unsupported type for callback: %T", callback))
+	if callback != nil {
+		// verify callback is a supported type
+		switch callback := callback.(type) {
+		case func():
+		case func(*Window):
+		case func(*Window, ModifierKey):
+		default:
+			panic(fmt.Sprintf("Unable to create menu item with unsupported type for callback: %T", callback))
+		}
 	}
 	return &MenuItem{
 		Title:    title,
