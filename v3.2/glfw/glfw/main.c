@@ -65,8 +65,6 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    //getActualWindowWidth(glfwGetWin32Window(window));
-
     HMENU mainMenu = CreateMenu();
     appendMenu(mainMenu, TEST_CODE, "Sesión");
     SetMenu(glfwGetWin32Window(window), mainMenu);

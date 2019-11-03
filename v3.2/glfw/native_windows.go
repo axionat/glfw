@@ -6,7 +6,7 @@ package glfw
 //#define GLFW_INCLUDE_NONE
 //#include "glfw/include/GLFW/glfw3.h"
 //#include "glfw/include/GLFW/glfw3native.h"
-//LONG getActualWindowWidth(HWND handle);
+//float getDPIScale(HWND handle);
 //BOOL appendSeparator(HMENU handle);
 //BOOL appendMenu(HMENU handle, int code, const char *title);
 //BOOL appendPopup(HMENU handle, HMENU submenu, const char *title);
@@ -74,11 +74,9 @@ func (w *Window) GetMods() (mods ModifierKey) {
 	return mods
 }
 
-// GetScale receiver method
-func (w *Window) GetScale() int {
-	actual := C.getActualWindowWidth(w.GetWin32Window())
-	width, _ := w.GetSize()
-	return int(actual) / width
+// GetDPIScale receiver method
+func (w *Window) GetDPIScale() float32 {
+	return float32(C.getDPIScale(w.GetWin32Window()))
 }
 
 //export goMenuCallback

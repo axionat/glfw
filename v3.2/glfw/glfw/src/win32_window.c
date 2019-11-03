@@ -40,10 +40,11 @@ extern void goMenuCallback(_GLFWwindow *window, int code);
 
 extern BOOL goContextualMenuCallback(_GLFWwindow *window, long x, long y);
 
-LONG getActualWindowWidth(HWND handle) {
-    RECT rect = {0};
-    GetClientRect(handle, &rect);
-    return rect.right - rect.left;
+float getDPIScale(HWND handle) {
+    HDC hdc = GetDC(handle);
+    float g_DPIScaleX = GetDeviceCaps(hdc, LOGPIXELSX) / 96.0f;
+    ReleaseDC(handle, hdc);
+    return g_DPIScaleX;
 }
 
 BOOL appendSeparator(HMENU handle) {
