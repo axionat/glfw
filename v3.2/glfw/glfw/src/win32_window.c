@@ -40,13 +40,10 @@ extern void goMenuCallback(_GLFWwindow *window, int code);
 
 extern BOOL goContextualMenuCallback(_GLFWwindow *window, long x, long y);
 
-LONG getMonitorPixelCount(HWND handle) {
-    HMONITOR monitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-    MONITORINFO info = {0};
-    info.cbSize = sizeof(MONITORINFO);
-    GetMonitorInfo(monitor, &info);
-    return (info.rcMonitor.right - info.rcMonitor.left) * // width
-           (info.rcMonitor.bottom - info.rcMonitor.top);  // height
+LONG getActualWindowWidth(HWND handle) {
+    RECT rect = {0};
+    GetClientRect(handle, &rect);
+    return rect.right - rect.left;
 }
 
 BOOL appendSeparator(HMENU handle) {
