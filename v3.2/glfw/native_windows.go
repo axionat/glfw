@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -411,13 +412,15 @@ func (menu *Menu) AppendSubMenu(subMenu *SubMenu) {
 
 type callbackRegistry struct {
 	sync.Mutex
-	nextCode    C.int
 	callbackMap map[C.int]interface{}
 }
 
 // ErrNoCallback is error returned when trying to execute a callback on an item with no
 // associated callback defined
 var ErrNoCallback = errors.New("No callback defined for this item")
+
+// last unique menu item handle
+var lastCode = int32(13)
 
 func (registry *callbackRegistry) execute(w *Window, code C.int) error {
 	if registry == nil {
@@ -473,12 +476,10 @@ func (registry *callbackRegistry) register(callback interface{}) C.int {
 
 	// initialize if needed
 	if registry.callbackMap == nil {
-		registry.nextCode = 13
 		registry.callbackMap = make(map[C.int]interface{})
 	}
 
-	code := registry.nextCode
-	registry.nextCode++
+	code := C.int(atomic.AddInt32(&lastCode, 1))
 	registry.callbackMap[code] = callback
 	return code
 }
