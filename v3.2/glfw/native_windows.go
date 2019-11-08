@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -210,7 +211,11 @@ func NewContextualMenu(w *Window) *Menu {
 
 func (menu *Menu) showAndDestroy(x, y C.long) {
 	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(), x, y)
-	menu.Destroy()
+	// delay the desctuction since callbacks may still be arriving based on this menu
+	go func() {
+		time.Sleep(time.Second)
+		menu.Destroy()
+	}()
 }
 
 // Popup displays the menuy as a popup menu from the current cursor screen position.
