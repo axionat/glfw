@@ -161,8 +161,14 @@ type Window struct {
 	fCharModsHolder    func(w *Window, char rune, mods ModifierKey)
 	fDropHolder        func(w *Window, names []string)
 
-	// callback funcgtion for contextual menu on mouse botton 2
+	// callback function for contextual menu on mouse botton 2
 	fContextualHolder func(w *Window) *Menu
+
+	// menu is the menu bar for this window, if set
+	menu *Menu
+
+	// callbacks is registry of windows menu callbacks for this window
+	callbacks callbackRegistry
 }
 
 // GLFWWindow returns a *C.GLFWwindow reference (i.e. the GLFW window itself). This can be used for
@@ -292,8 +298,11 @@ func CreateWindow(width, height int, title string, monitor *Monitor, share *Wind
 		return nil, acceptError(APIUnavailable, VersionUnavailable)
 	}
 
-	wnd := &Window{data: w}
+	wnd := &Window{
+		data: w,
+	}
 	windows.put(wnd)
+
 	return wnd, nil
 }
 
@@ -304,6 +313,9 @@ func CreateWindow(width, height int, title string, monitor *Monitor, share *Wind
 func (w *Window) Destroy() {
 	windows.remove(w.data)
 	C.glfwDestroyWindow(w.data)
+	if w.menu != nil {
+		w.menu.Destroy()
+	}
 	panicError()
 }
 

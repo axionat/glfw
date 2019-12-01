@@ -15,8 +15,11 @@ package glfw
 //void showMessageBox(const char *caption, const char *message);
 import "C"
 import (
+	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -48,14 +51,38 @@ func (w *Window) GetWGLContext() C.HGLRC {
 	return ret
 }
 
+// setMenuBar sets menu and all subMenus as menu bar menus
+// this is so we know to redraw after enabled or checked status is changed for items
+func (menu *Menu) setMenuBar() {
+	menu.menuBar = true
+	for _, entry := range menu.entries {
+		if subMenu, ok := entry.(*SubMenu); ok {
+			subMenu.menuBar = true
+			subMenu.Menu.setMenuBar()
+		}
+	}
+}
+
 // SetMainMenu for this window
 func (w *Window) SetMainMenu(menu *Menu) {
+	// mark this menu tree as a menu bar
+	menu.setMenuBar()
+
 	ret := C.glfwGetWin32Window(w.data)
 	C.SetMenu(ret, menu.handle)
+
+	// destroy any previous menu
+	if w.menu != nil {
+		w.menu.Destroy()
+	}
+	w.menu = menu
 }
 
 // GetMods manually queries and returns the current key modifiers for the given window
 func (w *Window) GetMods() (mods ModifierKey) {
+	if w == nil {
+		return
+	}
 	if w.GetKey(KeyLeftShift) == Press ||
 		w.GetKey(KeyRightShift) == Press {
 		mods += ModShift
@@ -75,7 +102,7 @@ func (w *Window) GetMods() (mods ModifierKey) {
 	return mods
 }
 
-// GetDPIScale receiver method
+// GetDPIScale returns the DPI scaling in use for the window
 func (w *Window) GetDPIScale() float32 {
 	return float32(C.getDPIScale(w.GetWin32Window()))
 }
@@ -83,15 +110,14 @@ func (w *Window) GetDPIScale() float32 {
 //export goMenuCallback
 func goMenuCallback(w *C.GLFWwindow, code C.int) {
 	window := windows.get(w)
-	if callback := registry.menuCallbackMap[int(code)]; callback != nil {
-		switch callback := callback.(type) {
-		case func():
-			callback()
-		case func(*Window):
-			callback(window)
-		case func(*Window, ModifierKey):
-			callback(window, window.GetMods())
-		}
+	if code == 0 || // default no callback code
+		window == nil { // no window to look for callbacks in
+		return
+	}
+	err := window.callbacks.execute(window, code)
+	if err != nil {
+		fmt.Printf("\n**************\nCallback not found: %3d  %s\n*****************\n",
+			int(code), err.Error())
 	}
 }
 
@@ -115,20 +141,69 @@ func goContextualMenuCallback(w *C.GLFWwindow, x, y C.long) bool {
 
 // Menu struct
 type Menu struct {
-	handle C.HMENU
-	window *Window
+	handle  C.HMENU
+	window  *Window
+	entries []interface{}
+	// set when menu is drawn as menu bar, used to determine whether to readraw when checked or enabled is changed on items
+	menuBar bool
 }
 
-// NewMenu constructor
+// GetEntries returns a slice of menu items, each entry will be one of:
+//     *MenuItem
+//     *SubMenu
+//     nil (for separator)
+func (menu *Menu) GetEntries() (entries []interface{}) {
+	entries = make([]interface{}, len(menu.entries))
+	copy(entries, menu.entries)
+	return entries
+}
+
+// Destroy this menu and clean up resources associated with any callbacks.
+func (menu *Menu) Destroy() {
+	if menu == nil {
+		return
+	}
+	if menu.window != nil {
+		for _, entry := range menu.entries {
+			switch entry := entry.(type) {
+			case *MenuItem:
+				menu.window.callbacks.Lock()
+				delete(menu.window.callbacks.callbackMap, entry.code)
+				menu.window.callbacks.Unlock()
+			case *SubMenu:
+				entry.Menu.Destroy()
+			}
+		}
+	}
+
+	if !menu.menuBar {
+		// menu bar destruction in C space is handled when window itself is destroyed
+		C.destroyMenu(menu.handle)
+	}
+	// after entries are destroyed, remove them from list
+	// this makes a Destroy call safe to repeat
+	menu.entries = nil
+}
+
+// NewMenu returns a new menu ready for appending items and submenus
 func NewMenu(w *Window) *Menu {
+	if w == nil {
+		return nil
+	}
 	return &Menu{
 		handle: C.CreateMenu(),
 		window: w,
 	}
 }
 
-// NewContextualMenu constructor
+// NewContextualMenu returns a new popup menu ready for items and submenus to be added.
+// After menu is assembled, it should be added as a general window contextual menu
+// via SetcontextualCallback to be automatically shown on any right-click in the window
+// or directly executed via Popup method
 func NewContextualMenu(w *Window) *Menu {
+	if w == nil {
+		return nil
+	}
 	return &Menu{
 		handle: C.CreatePopupMenu(),
 		window: w,
@@ -137,33 +212,67 @@ func NewContextualMenu(w *Window) *Menu {
 
 func (menu *Menu) showAndDestroy(x, y C.long) {
 	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(), x, y)
+	// delay the desctuction since callbacks may still be arriving based on this menu
+	go func() {
+		time.Sleep(time.Second)
+		menu.Destroy()
+	}()
 }
 
-// ShowAndDestroy displays the menu then destroys it after any action or click
-// outside the menu
-func (menu *Menu) ShowAndDestroy() {
+// Popup displays the menuy as a popup menu from the current cursor screen position.
+// Menu must have been created via NewContextualMenu call.
+// Menu will be destroyed after any action or click.
+func (menu *Menu) Popup() {
 	w := menu.window
 	xpos, ypos := w.GetCursorPos()
 	x, y := w.GetPos()
 	x += int(xpos)
 	y += int(ypos)
-	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(),
-		C.long(x), C.long(y))
+	menu.showAndDestroy(C.long(x), C.long(y))
 }
 
-// MenuItem struct
+// MenuItem is an item to be added to a menu, create via NewMenuItem or CoupledMenuItem
 type MenuItem struct {
-	Title    string
-	Callback interface{} // func() func(*Window), or func(*Window, ModifierKey)
+	title    string
+	callback interface{} // func(), func(*Window), or func(*Window, ModifierKey)
 	menu     *Menu
 	code     C.int
 	checked  bool // used to hold checked set prior to item being added to menu
 	enabled  bool // used to hold enabled state prior to item being added to menuy
 }
 
-// CoupledMenuItem returns a menu item coupled to a bool at a provided location
-// checked state will follow the boolean; however, if value is changed separate
-// from menu action the checked state can get out of sync
+// Title returns the title of the menu item
+func (mi *MenuItem) Title() string {
+	if mi == nil {
+		return "nil"
+	}
+	return mi.title
+}
+
+// Execute directly performs any callback action set for the menu item.
+//
+// If mods is provided, it will be used in place of current window modifiers.
+//
+// Retured error will be:
+//    nil if callback performed,
+//    ErrNoCallback if no callback is defined for this item
+//    an error describing type mismatch error if callback is not a supported functiontype
+func (mi *MenuItem) Execute(mods ...ModifierKey) error {
+	if mi == nil || mi.callback == nil {
+		return nil
+	}
+	var window *Window
+	if mi.menu != nil {
+		window = mi.menu.window
+	}
+	return doCallback(mi.callback, window, mods...)
+}
+
+// CoupledMenuItem returns a menu item coupled to a bool at a provided location.
+//
+// The menu items checked status will be set by and follow the boolean.  If the
+// boolean value is changed other than by menu action, the checked state will
+// be otu of sync until the next menu action.
 func CoupledMenuItem(title string, target *bool) (item *MenuItem) {
 	item = NewMenuItem(title, func() {
 		*target = !*target
@@ -173,7 +282,11 @@ func CoupledMenuItem(title string, target *bool) (item *MenuItem) {
 	return item
 }
 
-// NewMenuItem constructor
+// NewMenuItem returns a new menu item with an optional callback function.
+// Callback, ir provied, must be one of the following types:
+//     func()
+//     func(*Window)
+//     func(*Window, ModifierKey)
 func NewMenuItem(title string, callback interface{}) *MenuItem {
 	if callback != nil {
 		// verify callback is a supported type
@@ -186,50 +299,59 @@ func NewMenuItem(title string, callback interface{}) *MenuItem {
 		}
 	}
 	return &MenuItem{
-		Title:    title,
-		Callback: callback,
+		title:    title,
+		callback: callback,
 		enabled:  true,
 	}
 }
 
 // SetChecked adjusts the menu items checked status
 func (mi *MenuItem) SetChecked(chk bool) {
-	if mi.menu == nil {
-		// item not added to a menu yet, keep this state which will be applied
-		// once item is added to menu
-		mi.checked = chk
-		return
-	}
 	if mi.checked == chk {
+		// no change, so no action required
 		return
 	}
+	// update checked state
 	mi.checked = chk
-	if chk {
-		C.CheckMenuItem(mi.menu.handle, C.uint(mi.code), 0x8) // MF_CHECKED == 0x8
-	} else {
-		C.CheckMenuItem(mi.menu.handle, C.uint(mi.code), 0x0) // C.MF_UNCKECKED == 0x0
+	if mi.menu == nil {
+		// return, can not update not drawn item from C calls,
+		// local state will update state when drawn
+		return
 	}
-	C.DrawMenuBar(mi.menu.window.GetWin32Window())
+	// update status in C domain
+	var status uint32 // C.MF_UNCKECKED == 0x0
+	if chk {
+		status = 0x8 // C.MF_CHECKED == 0x8
+	}
+	C.CheckMenuItem(mi.menu.handle, C.uint(mi.code), C.uint(status))
+	// redraw if this is part of an active menu bar
+	if mi.menu.menuBar {
+		C.DrawMenuBar(mi.menu.window.GetWin32Window())
+	}
 }
 
 // SetEnabled adjusts the menu items enabled vs disabled / grayed out status
 func (mi *MenuItem) SetEnabled(enabled bool) {
-	if mi.menu == nil {
-		// item not added to a menu yet, keep this state which will be applied
-		// once item is added to menu
-		mi.enabled = enabled
-		return
-	}
 	if enabled == mi.enabled {
 		return
 	}
 	mi.enabled = enabled
-	if enabled {
-		C.EnableMenuItem(mi.menu.handle, C.uint(mi.code), 0x0) // C.MF_ENABLED == 0
-	} else {
-		C.EnableMenuItem(mi.menu.handle, C.uint(mi.code), 0x1) // C.MF_GRAYED == 0x1
+	if mi.menu == nil { // item not added to menu yet
+		// return, can not update not drawn item from C calls,
+		// local state will update state when drawn
+		return
 	}
-	C.DrawMenuBar(mi.menu.window.GetWin32Window())
+	// update status in C domain
+	var status uint32 // C.MF_ENABLED == 0x0
+	if !enabled {
+		status = 0x1 // C.MF_GRAYED == 0x1
+	}
+
+	C.EnableMenuItem(mi.menu.handle, C.uint(mi.code), C.uint(status))
+	// redraw if this is part of an active menu bar
+	if mi.menu.menuBar {
+		C.DrawMenuBar(mi.menu.window.GetWin32Window())
+	}
 }
 
 // SubMenu struct
@@ -240,29 +362,33 @@ type SubMenu struct {
 
 // NewSubMenu constructor
 func NewSubMenu(w *Window, title string) *SubMenu {
+	if w == nil {
+		// we have to have a window to create a SubMenu
+		return nil
+	}
 	return &SubMenu{
 		Menu:  NewMenu(w),
 		Title: title,
 	}
 }
 
-// Destroy this menu. Not needed when menu is attached to a window via `SetMenu`.
-func (menu *Menu) Destroy() {
-	C.destroyMenu(menu.handle)
-}
-
 // AppendSeparator to this menu
 func (menu *Menu) AppendSeparator() {
+	menu.entries = append(menu.entries, nil)
 	C.appendSeparator(menu.handle)
 }
 
 // AppendMenuItem to this menu
 func (menu *Menu) AppendMenuItem(menuItem *MenuItem) {
-	code := registry.register(menuItem.Callback)
-	menuItem.code = code
+	menu.entries = append(menu.entries, menuItem)
+	var code C.int
+	if menuItem.callback != nil {
+		code = menu.window.callbacks.register(menuItem.callback)
+		menuItem.code = code
+	}
 	menuItem.menu = menu
 
-	title := C.CString(menuItem.Title)
+	title := C.CString(menuItem.title)
 	defer C.free(unsafe.Pointer(title))
 
 	C.appendMenu(menu.handle, code, title)
@@ -279,6 +405,7 @@ func (menu *Menu) AppendMenuItem(menuItem *MenuItem) {
 
 // AppendSubMenu to this menu
 func (menu *Menu) AppendSubMenu(subMenu *SubMenu) {
+	menu.entries = append(menu.entries, subMenu)
 	if subMenu.window != menu.window {
 		panic("window does not match for menu and submenu: " + subMenu.Title)
 	}
@@ -289,29 +416,78 @@ func (menu *Menu) AppendSubMenu(subMenu *SubMenu) {
 	C.appendPopup(menu.handle, subMenu.handle, title)
 }
 
-var registry = newCallbackRegistry()
-
 type callbackRegistry struct {
 	sync.Mutex
-	nextCode        int
-	menuCallbackMap map[int]interface{}
+	callbackMap map[C.int]interface{}
 }
 
-func newCallbackRegistry() *callbackRegistry {
-	return &callbackRegistry{
-		nextCode:        13,
-		menuCallbackMap: make(map[int]interface{}),
+// ErrNoCallback is error returned when trying to execute a callback on an item with no
+// associated callback defined
+var ErrNoCallback = errors.New("No callback defined for this item")
+
+// last unique menu item handle
+var lastCode = int32(13)
+
+func (registry *callbackRegistry) execute(w *Window, code C.int) error {
+	if registry == nil {
+		return ErrNoCallback
+	}
+	registry.Lock()
+	defer registry.Unlock()
+	callback := registry.callbackMap[code]
+	return doCallback(callback, w)
+}
+
+// doCallback executes a callback based on the type found.
+// If mods is not provided and is required for the callback, current modifiers
+// for the provided window are obtained and used.
+func doCallback(callback interface{}, w *Window, mods ...ModifierKey) error {
+	if callback == nil {
+		return ErrNoCallback
+	}
+	switch callback := callback.(type) {
+	case func():
+		callback()
+		return nil
+	case func(*Window):
+		callback(w)
+		return nil
+	case func(*Window, ModifierKey):
+		if len(mods) > 0 {
+			callback(w, mods[0])
+		} else {
+			callback(w, w.GetMods())
+		}
+		return nil
+	default:
+		return fmt.Errorf("Unable to perform unsupported callback function: %T   [allowed functions: func(), func(*glfw.Window), and func(*glfw.Window, glfw.ModifierKey) ]", callback)
 	}
 }
 
 func (registry *callbackRegistry) register(callback interface{}) C.int {
+	if callback == nil {
+		return 0
+	}
+	// verify callback is a supported type
+	switch callback := callback.(type) {
+	case func():
+	case func(*Window):
+	case func(*Window, ModifierKey):
+	default:
+		panic(fmt.Sprintf("Unable to register menu callback with unsupported type (func(), func(*glfw.Window), and func(*glfw.Window, glfw.ModifierKey) allowed): %T", callback))
+	}
+
 	registry.Lock()
 	defer registry.Unlock()
 
-	code := registry.nextCode
-	registry.nextCode++
-	registry.menuCallbackMap[code] = callback
-	return C.int(code)
+	// initialize if needed
+	if registry.callbackMap == nil {
+		registry.callbackMap = make(map[C.int]interface{})
+	}
+
+	code := C.int(atomic.AddInt32(&lastCode, 1))
+	registry.callbackMap[code] = callback
+	return code
 }
 
 // ShowMessageBox with a simple OK button
