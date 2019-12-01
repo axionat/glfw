@@ -12,6 +12,7 @@ package glfw
 //BOOL appendPopup(HMENU handle, HMENU submenu, const char *title);
 //BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y);
 //BOOL destroyMenu(HMENU handle);
+//void showMessageBox(const char *caption, const char *message);
 import "C"
 import (
 	"fmt"
@@ -311,4 +312,15 @@ func (registry *callbackRegistry) register(callback interface{}) C.int {
 	registry.nextCode++
 	registry.menuCallbackMap[code] = callback
 	return C.int(code)
+}
+
+// ShowMessageBox with a simple OK button
+func ShowMessageBox(caption, message string) {
+	c := C.CString(caption)
+	defer C.free(unsafe.Pointer(c))
+
+	m := C.CString(message)
+	defer C.free(unsafe.Pointer(m))
+
+	C.showMessageBox(c, m)
 }

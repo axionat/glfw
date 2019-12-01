@@ -74,6 +74,18 @@ BOOL destroyMenu(HMENU handle) {
     return DestroyMenu(handle);
 }
 
+void showMessageBox(const char *caption, const char *message) {
+    int length = MultiByteToWideChar(CP_UTF8, 0, caption, -1, NULL, 0);
+    wchar_t wideCaption[length];
+    MultiByteToWideChar(CP_UTF8, 0, caption, -1, wideCaption, length);
+
+    length = MultiByteToWideChar(CP_UTF8, 0, message, -1, NULL, 0);
+    wchar_t wideMessage[length];
+    MultiByteToWideChar(CP_UTF8, 0, message, -1, wideMessage, length);
+
+    MessageBox(NULL, wideMessage, wideCaption, MB_OK);
+}
+
 // Returns the window style for the specified window
 //
 static DWORD getWindowStyle(const _GLFWwindow* window)
