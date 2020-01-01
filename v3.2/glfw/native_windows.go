@@ -163,6 +163,7 @@ func (menu *Menu) Destroy() {
 	if menu == nil {
 		return
 	}
+
 	if menu.window != nil {
 		for _, entry := range menu.entries {
 			switch entry := entry.(type) {
@@ -170,19 +171,19 @@ func (menu *Menu) Destroy() {
 				menu.window.callbacks.Lock()
 				delete(menu.window.callbacks.callbackMap, entry.code)
 				menu.window.callbacks.Unlock()
+				C.destroyMenu(entry.menu.handle)
 			case *SubMenu:
 				entry.Menu.Destroy()
+				C.destroyMenu(entry.handle)
 			}
 		}
 	}
 
-	if !menu.menuBar {
-		// menu bar destruction in C space is handled when window itself is destroyed
-		C.destroyMenu(menu.handle)
-	}
 	// after entries are destroyed, remove them from list
 	// this makes a Destroy call safe to repeat
 	menu.entries = nil
+
+	C.destroyMenu(menu.handle)
 }
 
 // NewMenu returns a new menu ready for appending items and submenus
