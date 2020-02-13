@@ -67,7 +67,7 @@ BOOL appendPopup(HMENU handle, HMENU submenu, const char *title) {
 
 BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y) {
     TrackPopupMenu(menuHandle, TPM_RIGHTBUTTON, x, y, 0, windowHandle, NULL);
-    DestroyMenu(menuHandle);
+    return DestroyMenu(menuHandle);
 }
 
 BOOL destroyMenu(HMENU handle) {

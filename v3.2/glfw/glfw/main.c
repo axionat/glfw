@@ -39,7 +39,7 @@ BOOL goContextualMenuCallback(_GLFWwindow *window, long x, long y) {
     AppendMenuW(hMenu, MF_STRING, 33, L"&New");
     AppendMenuW(hMenu, MF_STRING, 33, L"&Open");
     AppendMenuW(hMenu, MF_STRING, 33, L"&Quit");
-    showAndDestroyContextualMenu(hMenu, window->win32.handle, x, y);
+    return showAndDestroyContextualMenu(hMenu, window->win32.handle, x, y);
 }
 
 
