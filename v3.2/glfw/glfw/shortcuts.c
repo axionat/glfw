@@ -1,6 +1,33 @@
 #ifndef _cgo
 
 #include <Windows.h>
+#include <CommCtrl.h>
+
+#pragma comment(lib, "comctl32.lib")
+
+HWND CreateListView(HWND hwndParent, HINSTANCE hInstance) {
+    INITCOMMONCONTROLSEX icex; // Structure for control initialization.
+    icex.dwICC = ICC_LISTVIEW_CLASSES;
+    InitCommonControlsEx(&icex);
+    RECT rcClient; // The parent window's client area.
+    GetClientRect(hwndParent, &rcClient);
+
+    // Create the list-view window in report view with label editing enabled.
+    HWND hWndListView = CreateWindow(WC_LISTVIEW, (LPCSTR) "", WS_CHILD | LVS_REPORT | LVS_EDITLABELS,
+                                     0, 0, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top,
+                                     hwndParent, NULL, hInstance, NULL);
+
+    return (hWndListView);
+}
+
+VOID SetView(HWND hWndListView, DWORD dwView) {
+    // Retrieve the current window style.
+    LONG dwStyle = GetWindowLong(hWndListView, GWL_STYLE);
+
+    // Set the window style only if the view bits changed.
+    if ((dwStyle & LVS_TYPEMASK) != dwView)
+        SetWindowLong(hWndListView, GWL_STYLE, (dwStyle & ~LVS_TYPEMASK) | dwView);
+}
 
 BOOL window1closed = FALSE;
 BOOL window2closed = FALSE;
