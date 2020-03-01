@@ -99,6 +99,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nS
     if (!handleforwindow2)
         MessageBox(NULL, (LPCSTR) "Window creation failed", (LPCSTR) "Window Creation Failed", MB_ICONERROR);
 
+    HWND listView = CreateListView(handleforwindow2, hInst);
+
+    if (!listView)
+        MessageBox(NULL, (LPCSTR) "List view creation failed", (LPCSTR) "List view Creation Failed", MB_ICONERROR);
+
+    SetView(listView, 0);
     ShowWindow(handleforwindow1, nShowCmd);
     ShowWindow(handleforwindow2, nShowCmd);
     //SetParent(handleforwindow2, handleforwindow1);

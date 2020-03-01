@@ -3,4 +3,5 @@ project(glfw C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(glfw WIN32 shortcuts.c)
+add_executable(glfw WIN32 main.c)
+add_executable(test WIN32 test.c)
