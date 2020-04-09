@@ -5,37 +5,14 @@
 
 #pragma comment(lib, "comctl32.lib")
 
-HWND CreateListView(HWND hwndParent, HINSTANCE hInstance) {
-    INITCOMMONCONTROLSEX icex; // Structure for control initialization.
-    icex.dwICC = ICC_LISTVIEW_CLASSES;
-    InitCommonControlsEx(&icex);
-    RECT rcClient; // The parent window's client area.
-    GetClientRect(hwndParent, &rcClient);
-
-    // Create the list-view window in report view with label editing enabled.
-    HWND hWndListView = CreateWindow(WC_LISTVIEW, (LPCSTR) "", WS_CHILD | LVS_REPORT | LVS_EDITLABELS,
-                                     0, 0, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top,
-                                     hwndParent, NULL, hInstance, NULL);
-
-    return (hWndListView);
-}
-
-VOID SetView(HWND hWndListView, DWORD dwView) {
-    // Retrieve the current window style.
-    LONG dwStyle = GetWindowLong(hWndListView, GWL_STYLE);
-
-    // Set the window style only if the view bits changed.
-    if ((dwStyle & LVS_TYPEMASK) != dwView)
-        SetWindowLong(hWndListView, GWL_STYLE, (dwStyle & ~LVS_TYPEMASK) | dwView);
-}
-
 BOOL window1closed = FALSE;
 BOOL window2closed = FALSE;
+HWND hwndButton;
+HWND hWndListView;
 
 LRESULT CALLBACK WindowProcess1(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_DESTROY:
-            MessageBox(NULL, (LPCSTR) "Window 1 closed", (LPCSTR) "Message", MB_ICONINFORMATION);
             window1closed = TRUE;
             return 0;
         default:
@@ -46,8 +23,26 @@ LRESULT CALLBACK WindowProcess1(HWND handle, UINT msg, WPARAM wParam, LPARAM lPa
 LRESULT CALLBACK WindowProcess2(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_DESTROY:
-            MessageBox(NULL, (LPCSTR) "Window 2 Closed", (LPCSTR) "Message", MB_ICONINFORMATION);
             window2closed = TRUE;
+            return 0;
+        default:
+            return DefWindowProc(handle, msg, wParam, lParam);
+    }
+}
+
+LRESULT CALLBACK WindowProcess3(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam) {
+    PAINTSTRUCT ps;
+    HDC hdc;
+
+    switch (msg) {
+        case WM_PAINT:
+            hdc = BeginPaint(handle, &ps);
+            TextOut(hdc, 40, 40, "Hello, Windows!", 15);
+            EndPaint(handle, &ps);
+            return 0;
+        case WM_COMMAND:
+            if (hwndButton == (HWND) lParam)
+                MessageBox(NULL, (LPCSTR) "You clicked me.", (LPCSTR) "Error", MB_ICONERROR);
             return 0;
         default:
             return DefWindowProc(handle, msg, wParam, lParam);
@@ -99,15 +94,51 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nS
     if (!handleforwindow2)
         MessageBox(NULL, (LPCSTR) "Window creation failed", (LPCSTR) "Window Creation Failed", MB_ICONERROR);
 
-    HWND listView = CreateListView(handleforwindow2, hInst);
+    //create window 3
+    WNDCLASSEX windowclassforwindow3;
+    ZeroMemory(&windowclassforwindow3, sizeof(WNDCLASSEX));
+    windowclassforwindow3.cbSize = sizeof(WNDCLASSEX);
+    windowclassforwindow3.hbrBackground = CreateSolidBrush(RGB(255, 255, 255));
+    windowclassforwindow3.hCursor = LoadCursor(NULL, IDC_ARROW);
+    windowclassforwindow3.hInstance = hInst;
+    windowclassforwindow3.lpfnWndProc = (WNDPROC) WindowProcess3;
+    windowclassforwindow3.lpszClassName = (LPCSTR) "windowclass 3";
+    windowclassforwindow3.style = CS_HREDRAW | CS_VREDRAW;
 
-    if (!listView)
-        MessageBox(NULL, (LPCSTR) "List view creation failed", (LPCSTR) "List view Creation Failed", MB_ICONERROR);
+    if (!RegisterClassEx(&windowclassforwindow3))
+        MessageBox(NULL, (LPCSTR) "Window class creation failed", (LPCSTR) "Window Class Failed", MB_ICONERROR);
 
-    SetView(listView, 0);
+    HWND handleforwindow3 = CreateWindowEx(0, windowclassforwindow3.lpszClassName,
+                                           (LPCSTR) "", WS_CHILD | WS_VISIBLE,
+                                           0, 0, 400, 300, handleforwindow1, NULL, hInst, NULL);
+
+    if (!handleforwindow3)
+        MessageBox(NULL, (LPCSTR) "Window creation failed", (LPCSTR) "Window Creation Failed", MB_ICONERROR);
+
+    // (HINSTANCE) GetWindowLongPtr(handleforwindow3, GWLP_HINSTANCE)
+    hwndButton = CreateWindowA(WC_BUTTONA, "Update",
+                               WS_VISIBLE | WS_CHILD | WS_TABSTOP | BS_DEFPUSHBUTTON,
+                               40, 80, 80, 40,
+                               handleforwindow3, NULL, hInst, NULL);
+
+    INITCOMMONCONTROLSEX icex;
+    icex.dwICC = ICC_LISTVIEW_CLASSES;
+    InitCommonControlsEx(&icex);
+
+    //RECT rcClient;
+    //GetClientRect(hwndParent, &rcClient);
+
+    hWndListView = CreateWindowA(WC_LISTVIEWA, "",
+                                 WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_EDITLABELS,
+                                 0, 0, 640, 480,
+                                 handleforwindow2, NULL, hInst, NULL);
+
+    //LONG dwStyle = GetWindowLong(hWndListView, GWL_STYLE);
+    //if ((dwStyle & LVS_TYPEMASK) != dwView) SetWindowLong(hWndListView, GWL_STYLE, (dwStyle & ~LVS_TYPEMASK) | dwView);
+
+    //SetParent(handleforwindow3, handleforwindow1);
     ShowWindow(handleforwindow1, nShowCmd);
     ShowWindow(handleforwindow2, nShowCmd);
-    //SetParent(handleforwindow2, handleforwindow1);
 
     BOOL end = FALSE;
     MSG msg;
@@ -121,8 +152,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nS
 
         end = window1closed && window2closed;
     }
-
-    MessageBox(NULL, (LPCSTR) "Both Windows are closed.  Program will now close.", (LPCSTR) "", MB_ICONINFORMATION);
 
     return 0;
 }
