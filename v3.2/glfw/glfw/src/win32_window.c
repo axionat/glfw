@@ -108,7 +108,7 @@ typedef struct {
     HWND maxMbpsHandle;
     HWND cancelButton;
     HWND applyButton;
-    BOOL quit;
+    float dpiScale;
 } ToolsWindow;
 
 LRESULT CALLBACK toolsWindowProcedure(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -119,26 +119,27 @@ LRESULT CALLBACK toolsWindowProcedure(HWND handle, UINT msg, WPARAM wParam, LPAR
 
     PAINTSTRUCT ps;
     HDC hdc;
+    int offset = 20 * window->dpiScale;
 
     switch (msg) {
         case WM_PAINT:
             hdc = BeginPaint(handle, &ps);
             SetBkColor(hdc, RGB(243, 243, 243));
-            TextOut(hdc, 20, 10, "Zones Alpha", 11);
-            TextOut(hdc, 20, 40, "Viewport Color", 14);
-            TextOut(hdc, 20, 70, "Viewport Alpha", 14);
-            TextOut(hdc, 20, 100, "Viewport Min", 12);
-            TextOut(hdc, 20, 130, "Viewport Max", 12);
-            TextOut(hdc, 20, 160, "Observation Filter", 18);
-            TextOut(hdc, 20, 190, "Track Time", 10);
-            TextOut(hdc, 20, 220, "Dimming", 7);
-            TextOut(hdc, 20, 250, "Dropped Dim", 11);
-            TextOut(hdc, 20, 280, "Opacity", 7);
-            TextOut(hdc, 20, 310, "Min Speed", 9);
-            TextOut(hdc, 20, 340, "Max Speed", 9);
-            TextOut(hdc, 20, 370, "Track Size", 10);
-            TextOut(hdc, 20, 400, "Observation Size", 16);
-            TextOut(hdc, 20, 430, "Max Mbps", 8);
+            TextOut(hdc, offset, 10 * window->dpiScale, (LPCWSTR) "Zones Alpha", 11);
+            TextOut(hdc, offset, 40 * window->dpiScale, (LPCWSTR) "Viewport Color", 14);
+            TextOut(hdc, offset, 70 * window->dpiScale, (LPCWSTR) "Viewport Alpha", 14);
+            TextOut(hdc, offset, 100 * window->dpiScale, (LPCWSTR) "Viewport Min", 12);
+            TextOut(hdc, offset, 130 * window->dpiScale, (LPCWSTR) "Viewport Max", 12);
+            TextOut(hdc, offset, 160 * window->dpiScale, (LPCWSTR) "Observation Filter", 18);
+            TextOut(hdc, offset, 190 * window->dpiScale, (LPCWSTR) "Track Time", 10);
+            TextOut(hdc, offset, 220 * window->dpiScale, (LPCWSTR) "Dimming", 7);
+            TextOut(hdc, offset, 250 * window->dpiScale, (LPCWSTR) "Dropped Dim", 11);
+            TextOut(hdc, offset, 280 * window->dpiScale, (LPCWSTR) "Opacity", 7);
+            TextOut(hdc, offset, 310 * window->dpiScale, (LPCWSTR) "Min Speed", 9);
+            TextOut(hdc, offset, 340 * window->dpiScale, (LPCWSTR) "Max Speed", 9);
+            TextOut(hdc, offset, 370 * window->dpiScale, (LPCWSTR) "Track Size", 10);
+            TextOut(hdc, offset, 400 * window->dpiScale, (LPCWSTR) "Observation Size", 16);
+            TextOut(hdc, offset, 430 * window->dpiScale, (LPCWSTR) "Max Mbps", 8);
             EndPaint(handle, &ps);
             return 0;
         case WM_COMMAND:
@@ -157,9 +158,8 @@ LRESULT CALLBACK toolsWindowProcedure(HWND handle, UINT msg, WPARAM wParam, LPAR
             //SetDCBrushColor(hdc, RGB(255, 0, 0));
             //SetTextColor(hdc, RGB(255, 0, 0));
             //return (LRESULT) GetStockObject(DC_BRUSH);
-        case WM_DESTROY:
-            window->quit = TRUE;
-            return 0;
+            //case WM_DESTROY:
+            //return 0;
         default:
             return DefWindowProc(handle, msg, wParam, lParam);
     }
@@ -183,14 +183,14 @@ void unregisterClass(ToolsWindow *window) {
 HWND createButton(ToolsWindow *window, LPCSTR text, int y) {
     return CreateWindowA("Button", text,
                          WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                         200, y, 160, 20,
+                         200 * window->dpiScale, y, 160 * window->dpiScale, 20 * window->dpiScale,
                          window->windowHandle, NULL, window->windowClass.hInstance, NULL);
 }
 
 HWND createTextBox(ToolsWindow *window, int y) {
     return CreateWindowA("Edit", NULL,
                          WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER, //ES_MULTILINE | ES_READONLY
-                         200, y, 160, 20,
+                         200 * window->dpiScale, y, 160 * window->dpiScale, 20 * window->dpiScale,
                          window->windowHandle, NULL, window->windowClass.hInstance, NULL);
 }
 
@@ -209,39 +209,46 @@ HWND createListView(ToolsWindow *window) {
     //SetWindowLong(handle, GWL_STYLE, (dwStyle & ~LVS_TYPEMASK) | dwView);
 }
 
-void createWindow(ToolsWindow *window) {
+void createWindow(ToolsWindow *window, HWND parent) {
     //RECT rcClient;
     //GetClientRect(hwndParent, &rcClient);
 
+    window->dpiScale = getDPIScale(parent);
+    int offset = 100 * window->dpiScale;
+
     window->windowHandle = CreateWindowA(window->windowClass.lpszClassName, (LPCSTR) "Tools",
                                          WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
-                                         100, 100, 400, 540,
+                                         offset, offset, 400 * window->dpiScale, 540 * window->dpiScale,
                                          NULL, NULL, window->windowClass.hInstance, NULL);
 
-    window->zonesAlphaHandle = createTextBox(window, 10);
-    window->viewportColorHandle = createTextBox(window, 40);
-    window->viewportAlphaHandle = createTextBox(window, 70);
-    window->viewportMinHandle = createTextBox(window, 100);
-    window->viewportMaxHandle = createTextBox(window, 130);
-    window->observationFilterHandle = createTextBox(window, 160);
-    window->trackTimeHandle = createTextBox(window, 190);
-    window->dimmingHandle = createTextBox(window, 220);
-    window->droppedDimHandle = createTextBox(window, 250);
-    window->opacityHandle = createTextBox(window, 280);
-    window->minSpeedHandle = createTextBox(window, 310);
-    window->maxSpeedHandle = createTextBox(window, 340);
-    window->trackSizeHandle = createTextBox(window, 370);
-    window->observationSizeHandle = createTextBox(window, 400);
-    window->maxMbpsHandle = createTextBox(window, 430);
+    window->zonesAlphaHandle = createTextBox(window, 10 * window->dpiScale);
+    window->viewportColorHandle = createTextBox(window, 40 * window->dpiScale);
+    window->viewportAlphaHandle = createTextBox(window, 70 * window->dpiScale);
+    window->viewportMinHandle = createTextBox(window, 100 * window->dpiScale);
+    window->viewportMaxHandle = createTextBox(window, 130 * window->dpiScale);
+    window->observationFilterHandle = createTextBox(window, 160 * window->dpiScale);
+    window->trackTimeHandle = createTextBox(window, 190 * window->dpiScale);
+    window->dimmingHandle = createTextBox(window, 220 * window->dpiScale);
+    window->droppedDimHandle = createTextBox(window, 250 * window->dpiScale);
+    window->opacityHandle = createTextBox(window, 280 * window->dpiScale);
+    window->minSpeedHandle = createTextBox(window, 310 * window->dpiScale);
+    window->maxSpeedHandle = createTextBox(window, 340 * window->dpiScale);
+    window->trackSizeHandle = createTextBox(window, 370 * window->dpiScale);
+    window->observationSizeHandle = createTextBox(window, 400 * window->dpiScale);
+    window->maxMbpsHandle = createTextBox(window, 430 * window->dpiScale);
+
+    int buttonY = 470 * window->dpiScale;
+    int buttonWidth = 90 * window->dpiScale;
+    int buttonHeight = 30 * window->dpiScale;
 
     window->cancelButton = CreateWindowA("Button", "Cancel",
                                          WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                                         35, 470, 90, 30,
+                                         35 * window->dpiScale, buttonY, buttonWidth, buttonHeight,
                                          window->windowHandle, NULL, window->windowClass.hInstance, NULL);
 
     window->applyButton = CreateWindowA("Button", "Apply",
                                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                                        235, 470, 90, 30,
+                                        235 * window->dpiScale, buttonY, buttonWidth, buttonHeight,
                                         window->windowHandle, NULL, window->windowClass.hInstance, NULL);
 
     //SendMessageA(window->textEditHandle, WM_SETTEXT, 0, (LPARAM) "Enter text...");
@@ -251,7 +258,7 @@ void createWindow(ToolsWindow *window) {
 void showToolsWindow(HWND parent) {
     ToolsWindow toolsWindow = {0};
     registerClass(&toolsWindow, (HINSTANCE) GetWindowLongPtr(parent, GWLP_HINSTANCE));
-    createWindow(&toolsWindow);
+    createWindow(&toolsWindow, parent);
     ShowWindow(toolsWindow.windowHandle, SW_SHOW);
     //SetParent(handleForWindow2, handleForWindow1);
 }
