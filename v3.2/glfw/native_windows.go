@@ -13,6 +13,7 @@ package glfw
 //BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y);
 //BOOL destroyMenu(HMENU handle);
 //void showMessageBox(const char *caption, const char *message);
+//void showToolsWindow(HWND parent);
 import "C"
 import (
 	"errors"
@@ -144,7 +145,7 @@ type Menu struct {
 	handle  C.HMENU
 	window  *Window
 	entries []interface{}
-	// set when menu is drawn as menu bar, used to determine whether to readraw when checked or enabled is changed on items
+	// set when menu is drawn as menu bar, used to determine whether to redraw when checked or enabled is changed on items
 	menuBar bool
 }
 
@@ -213,14 +214,14 @@ func NewContextualMenu(w *Window) *Menu {
 
 func (menu *Menu) showAndDestroy(x, y C.long) {
 	C.showAndDestroyContextualMenu(menu.handle, menu.window.GetWin32Window(), x, y)
-	// delay the desctuction since callbacks may still be arriving based on this menu
+	// delay the destruction since callbacks may still be arriving based on this menu
 	go func() {
 		time.Sleep(time.Second)
 		menu.Destroy()
 	}()
 }
 
-// Popup displays the menuy as a popup menu from the current cursor screen position.
+// Popup displays the menu as a popup menu from the current cursor screen position.
 // Menu must have been created via NewContextualMenu call.
 // Menu will be destroyed after any action or click.
 func (menu *Menu) Popup() {
@@ -500,4 +501,8 @@ func ShowMessageBox(caption, message string) {
 	defer C.free(unsafe.Pointer(m))
 
 	C.showMessageBox(c, m)
+}
+
+func (w *Window) ShowToolsWindow() {
+	C.showToolsWindow(w.GetWin32Window())
 }
