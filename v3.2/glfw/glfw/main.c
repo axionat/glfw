@@ -29,8 +29,7 @@ void goMenuCallback(_GLFWwindow *window, int code) {
     MultiByteToWideChar(CP_UTF8, 0, narrowString, -1, wideString, length);
 
     if (code == TEST_CODE) {
-        MessageBox(NULL, wideString, L"Menu", MB_OK); // Works
-        //MessageBoxA(NULL, "Cerrar sesión", "Menu", MB_OK); // Does not work
+        MessageBox(NULL, wideString, L"Menu", MB_OK);
     }
 }
 
