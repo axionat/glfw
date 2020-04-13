@@ -13,7 +13,6 @@ package glfw
 //BOOL showAndDestroyContextualMenu(HMENU menuHandle, HWND windowHandle, long x, long y);
 //BOOL destroyMenu(HMENU handle);
 //void showMessageBox(const char *caption, const char *message);
-//void showToolsWindow(HWND parent);
 import "C"
 import (
 	"errors"
@@ -501,8 +500,4 @@ func ShowMessageBox(caption, message string) {
 	defer C.free(unsafe.Pointer(m))
 
 	C.showMessageBox(c, m)
-}
-
-func (w *Window) ShowToolsWindow() {
-	C.showToolsWindow(w.GetWin32Window())
 }
