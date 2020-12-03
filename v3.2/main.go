@@ -1,8 +1,12 @@
 package main
 
 import (
-	"github.com/axionat/glfw/v3.2/glfw"
+	"fmt"
 	"runtime"
+
+	"github.com/axionat/eagle/piglet/glutils"
+	"github.com/axionat/glfw/v3.2/glfw"
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 func init() {
@@ -10,6 +14,7 @@ func init() {
 }
 
 func main() {
+	fmt.Println("working...")
 	err := glfw.Init()
 
 	if err != nil {
@@ -23,7 +28,16 @@ func main() {
 	}
 
 	window.MakeContextCurrent()
-	window.ShowToolsWindow()
+
+	err = gl.Init()
+	if err != nil {
+		panic("OpenGL initialization failed: " + err.Error())
+	}
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	glutils.CheckGlError()
+
+	//	window.ShowToolsWindow()
 
 	for !window.ShouldClose() {
 		window.SwapBuffers()
@@ -31,4 +45,5 @@ func main() {
 	}
 
 	glfw.Terminate()
+	fmt.Println("Exiting normally...")
 }
